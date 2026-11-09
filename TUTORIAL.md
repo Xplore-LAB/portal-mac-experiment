@@ -6,17 +6,57 @@
 
 ## 一、要完成什么
 
-部分无屏设备可以连接 Wi-Fi，却不能显示网页完成 Portal 登录。本教程讨论一个有待实验验证的方案：**树莓派临时使用目标设备的 Wi-Fi MAC 接入网络，由本人完成一次网页登录；随后树莓派退出，让目标设备尝试继承该认证状态。**
+在学校宿舍、酒店或统一供网的公寓里，你可能遇到过这样的情况：手机连上 Wi-Fi 后，打开网页输入账号或验证码，就可以上网；另一些设备虽然能连上 Wi-Fi，却没有地方打开这个登录网页。这个网页通常就叫 **Portal 认证页**。
 
-认证系统可能绑定 MAC、IP、接入点或会话。因此，**树莓派认证成功，不代表目标设备一定能联网**。实验失败时，应记录结果并咨询网络管理方提供的正式设备接入方式。
+本文讨论一个有待实机验证的办法：**让树莓派临时使用目标设备的无线网卡地址（MAC），由本人完成一次网页登录；树莓派退出后，再让目标设备连接，观察它能否直接上网。** 后文会介绍 MAC 怎么查，以及树莓派怎么操作。
+
+### “无屏智能设备”指哪些东西？
+
+它们就在日常生活里，例如：
+
+- **智能音箱：** 用来听在线音乐、查询天气或进行语音问答，通常通过手机 App 设置 Wi-Fi。
+- **Wi-Fi 摄像头：** 例如家用室内摄像头、宠物摄像头，需要联网才能使用相应的远程查看功能。
+- **扫地机器人：** 连接 Wi-Fi 后，可以使用厂商 App 提供的远程操作、清扫记录等功能。
+- **直接连接 Wi-Fi 的智能插座、智能灯泡等：** 用手机 App 设置网络和使用相应的联网功能。
+
+这些产品的共同点是：**能使用网络，却未必有浏览器让你完成上网认证。** 有些产品有小显示屏，但同样无法打开认证网页，也可能遇到这个问题。这里举的是产品类别，具体型号和固件的适用性仍需确认；仅使用蓝牙、或通过网关连接的产品，要按它们实际的联网方式判断。
+
+### 常见应用场景
+
+| 场景 | 可能遇到的问题 |
+|---|---|
+| 学校宿舍、校园生活区 | 想使用自己的智能音箱等设备，但校园 Wi-Fi 要先在网页中输入学号、账号或验证码。 |
+| 长租公寓、员工宿舍 | 房间使用统一提供的 Wi-Fi，手机可以完成网页登录，智能家居设备却没有认证入口。 |
+| 酒店、民宿、短住公寓 | 携带自己的联网设备入住，网络要求在网页中填写房号、手机号或确认使用条款。 |
+| 共享办公、临时展台 | 经场地方许可演示智能设备，但提供的访客 Wi-Fi 需要通过网页认证。 |
+
+这些是可能遇到同类问题的场景，**能否使用本文方案，要看具体网络和设备**。当前脚本要求 Wi-Fi 本身无需密码即可连接，随后再通过网页认证；需要先输入 Wi-Fi 密码的网络不在本版支持范围内。
+
+如果学校或场地方提供“智能设备登记”“物联网专网”等入口，或设备本身提供酒店、校园网络连接功能，优先使用这些正式方式。[高校设备登记示例](https://it.cornell.edu/wifi/register-device-doesnt-have-browser)和[厂商官方设置示例](https://support.apple.com/guide/homepod/set-up-homepod-apd779d9bb45/homepod)可以帮助理解这两种途径。
 
 ### 准备物品
 
-- 一台有无线网卡的树莓派，推荐使用采用 NetworkManager 管理网络的 Raspberry Pi OS；脚本要求 `nmcli` 可用。
-- 一台需要 Portal 网页认证的无屏设备，以及它实际使用的 Wi-Fi MAC。
-- 一台 Windows 电脑（可选，用于 SSH、VNC、传输文件）。
-- 一条不会因树莓派 `wlan0` 切换而中断的管理方式：**本地显示器+键盘，或独立有线 SSH/VNC**。
-- 目标网络是**无需输入 Wi-Fi 密码即可关联、随后再打开 Portal 网页登录**的网络。当前脚本不适用于 802.1X、WPA-Enterprise 或必须先输入 Wi-Fi 密码的网络。
+| 物品 | 用来做什么 |
+|---|---|
+| **一台目标智能设备及其电源** | 例如上面列举的音箱、摄像头、扫地机器人或 Wi-Fi 插座；需要能查到它实际使用的 Wi-Fi MAC。 |
+| **一套能正常启动的树莓派** | 包含带 Wi-Fi 的树莓派、匹配的电源和已装系统的存储介质。系统需使用 NetworkManager，后文的 `nmcli` 就是它的命令行工具。 |
+| **手机和设备配套 App（按设备需要）** | 用于给设备选择 Wi-Fi、查看设备信息。本文不会代替设备原本的首次联网设置。 |
+| **本地操作或电脑远程操作，二选一** | 本地操作准备显示器、键盘，使用图形桌面时配鼠标；远程操作准备电脑和独立网线管理连接，本文以 Windows 为例。电脑没有有线网口时，可按需准备 USB 有线网卡。 |
+| **目标网络的信息** | Wi-Fi 名称（SSID）、本人的网页登录账号或其他认证资料，以及网络管理方对这项实验的许可。 |
+
+两套常见组合是：
+
+- **在树莓派旁操作：** 目标设备 + 树莓派完整套件 + 显示器、键盘；用浏览器时配鼠标。
+- **在电脑上操作：** 目标设备 + 树莓派完整套件 + 电脑、网线，先按后文建立独立的有线管理连接。
+
+设备需要手机 App 设置 Wi-Fi 时，两种组合都另备手机。已有系统的树莓派可以沿用，不必为这项实验重新购买或重装。
+
+### 开始前再确认两件事
+
+1. **设备本身能连接这个 Wi-Fi。** 核对说明书中的频段要求，例如是否支持目标网络的 2.4 GHz 或 5 GHz；如果设备连 Wi-Fi 这一步就做不到，先解决这个问题。
+2. **把“能上网”和“能互相控制”分开测试。** 有些访客网络会让各台设备彼此不可见。即使设备能访问互联网，手机 App 发现设备、投屏或多设备联动仍可能需要另外处理。[Google 官方说明也列出了此类设备发现问题](https://support.google.com/chromecast/answer/7566322?hl=en)。
+
+认证系统还可能同时绑定 MAC、IP、接入位置或会话。因此，**树莓派认证成功，不代表目标设备一定能联网**。以下步骤用于检验这件事，结果仍需如实记录。
 
 ## 二、完整执行流程
 
@@ -127,7 +167,7 @@ sudo raspi-config
 
 ## 五、下载项目并运行
 
-从 [GitHub Release v0.3.1](https://github.com/Xplore-LAB/portal-mac-experiment/releases/tag/v0.3.1) 下载 `portal-mac-experiment-v0.3.1.zip`；源码和更新见 [项目仓库](https://github.com/Xplore-LAB/portal-mac-experiment)。
+从 [GitHub Release v0.3.2](https://github.com/Xplore-LAB/portal-mac-experiment/releases/tag/v0.3.2) 下载 `portal-mac-experiment-v0.3.2.zip`；源码和更新见 [项目仓库](https://github.com/Xplore-LAB/portal-mac-experiment)。
 
 项目文件结构：
 
@@ -159,14 +199,14 @@ portal-mac-experiment/
 **使用 SSH：** 将 ZIP 放到 Windows 当前 PowerShell 目录，再传输到树莓派：
 
 ```powershell
-scp .\portal-mac-experiment-v0.3.1.zip myuser@192.168.88.2:
+scp .\portal-mac-experiment-v0.3.2.zip myuser@192.168.88.2:
 ssh myuser@192.168.88.2
 ```
 
 以下命令在登录后的**树莓派终端**运行：
 
 ```bash
-unzip portal-mac-experiment-v0.3.1.zip
+unzip portal-mac-experiment-v0.3.2.zip
 cd portal-mac-experiment
 bash quick-start.sh --check
 ```
@@ -259,5 +299,8 @@ bash scripts/portal-mac.sh restore
 3. [NetworkManager：nmcli](https://networkmanager.dev/docs/api/latest/nmcli.html)
 4. [NetworkManager：Wi-Fi cloned-mac-address](https://networkmanager.dev/docs/api/latest/nm-settings-nmcli.html)
 5. [Microsoft：Internet Connection Sharing](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ics/shared-connections)
+6. [Cornell IT：没有浏览器的设备如何登记联网](https://it.cornell.edu/wifi/register-device-doesnt-have-browser)
+7. [Apple：HomePod 的官方网页认证网络设置示例](https://support.apple.com/guide/homepod/set-up-homepod-apd779d9bb45/homepod)
+8. [Google：联网与设备发现问题排查](https://support.google.com/chromecast/answer/7566322?hl=en)
 
 **实验状态更新建议：** 首先完成只读检查；随后单独验证有线 SSH/VNC 管理通道；最后才进行获得授权的 MAC 与 Portal 实验。公开结论应区分离线检查、用户反馈与本次实机验证，未测步骤保持“待验证”。

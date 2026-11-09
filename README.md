@@ -1,10 +1,35 @@
 # 无屏设备如何登录需要网页认证的 Wi-Fi？
 
-用树莓派临时采用本人无屏设备的 Wi-Fi MAC，由本人完成一次 Portal 网页认证，再观察目标设备能否继承认证状态。
+智能音箱、Wi-Fi 摄像头、扫地机器人、Wi-Fi 智能插座等设备，往往能连接无线网络，却没有浏览器完成上网认证。到了学校宿舍、酒店或统一供网的公寓，就可能出现“手机能登录上网，设备却用不了”的情况。
 
-> **v0.3.1 · 实验性项目。** 原始材料记录了 Windows SSH 连接树莓派的用户反馈；本版通过 Shell 语法、ShellCheck 与离线回归检查。**无线 MAC 切换、真实 Portal 登录、目标设备继承认证仍待树莓派实机验证。**
+本项目用树莓派临时采用本人设备的无线网卡地址（MAC），由本人完成一次网页登录，再让目标设备连接，观察它能否直接上网。
 
-**入口：** [完整实操教程](TUTORIAL.md) · [Windows / SSH / VNC 连接指南](docs/connection-methods.md) · [下载 v0.3.1](https://github.com/Xplore-LAB/portal-mac-experiment/releases/tag/v0.3.1) · [博客阅读版](https://xplore-lab.github.io/2026/11/09/portal-mac-experiment/)
+> **v0.3.2 · 文档补充版，实验性项目。** 原始材料记录了 Windows SSH 连接树莓派的用户反馈；脚本沿用已通过 Shell 语法、ShellCheck 与离线回归检查的 v0.3.1。**无线 MAC 切换、真实 Portal 登录、目标设备继承认证仍待树莓派实机验证。**
+
+**入口：** [完整实操教程](TUTORIAL.md) · [Windows / SSH / VNC 连接指南](docs/connection-methods.md) · [下载 v0.3.2](https://github.com/Xplore-LAB/portal-mac-experiment/releases/tag/v0.3.2) · [博客阅读版](https://xplore-lab.github.io/2026/11/09/portal-mac-experiment/)
+
+## 先看设备与场景
+
+“无屏智能设备”包括常见的智能音箱、Wi-Fi 摄像头、扫地机器人，以及直接连接 Wi-Fi 的智能插座、灯泡等。它们可能通过手机 App 设置网络，却无法自行打开认证网页。具体型号是否适用，仍需实际确认。
+
+| 常见场景 | 读者可能遇到的情况 |
+|---|---|
+| 学校宿舍、校园生活区 | 自己的智能设备需要联网，但网络要在网页中输入学号、账号或验证码。 |
+| 长租公寓、员工宿舍 | 房间统一供网，手机能完成认证，智能家居设备没有对应入口。 |
+| 酒店、民宿、短住公寓 | 自带设备联网时，遇到填写房号、手机号或确认条款的网页。 |
+| 共享办公、临时展台 | 经场地方许可展示智能设备，访客 Wi-Fi 要先完成网页登录。 |
+
+如果学校或场地方提供设备登记、物联网专网，或设备已有官方酒店 / 校园联网功能，优先使用相应入口。本文实验用于进一步检查具体网络的认证能否由设备继承。
+
+## 准备物品
+
+- **目标智能设备和电源：** 需要知道它实际使用的 Wi-Fi MAC。
+- **带 Wi-Fi 的树莓派完整套件：** 电源、已装系统的存储介质，以及使用 NetworkManager 的系统。
+- **手机及设备配套 App（按需）：** 用于给设备设置 Wi-Fi、查看设备信息。
+- **一种稳定的操作方式：** 显示器、键盘 / 鼠标；或电脑加独立网线管理连接。本文的电脑操作以 Windows 为例。
+- **网络资料：** 目标 Wi-Fi 名称、本人的网页登录资料及网络管理方许可。
+
+具体设备例子、场景说明和两套可选组合见[完整教程第一节](TUTORIAL.md#一要完成什么)。先核对设备能连接目标 Wi-Fi；联网后，再单独测试手机 App 能否发现和控制设备。
 
 ## 适用条件
 
@@ -18,10 +43,10 @@ Portal 可能同时绑定 MAC、IP、接入位置或会话。树莓派认证成�
 
 ## 快速开始
 
-从 Release 下载 `portal-mac-experiment-v0.3.1.zip`，在树莓派解压：
+从 Release 下载 `portal-mac-experiment-v0.3.2.zip`，在树莓派解压：
 
 ```bash
-unzip portal-mac-experiment-v0.3.1.zip
+unzip portal-mac-experiment-v0.3.2.zip
 cd portal-mac-experiment
 bash quick-start.sh --check
 bash quick-start.sh
@@ -90,6 +115,8 @@ bash scripts/portal-mac.sh restore
 用 [experiments/result-template.yaml](experiments/result-template.yaml) 记录**脱敏后的**观测。`null` 表示未测，`false` 表示实测失败；不能将两者混用。
 
 ## 本版修正与验证
+
+v0.3.2 补充设备类别、常见使用场景和物品清单，并用日常语言解释网页登录认证。脚本沿用 v0.3.1，本轮未改变网络操作逻辑。
 
 v0.3.1 修正 MAC 字段的 `nmcli` 转义读取、准备失败时误清理旧配置、有线启用前的占用复查；补充 IPv4 检查、IPv6 SSH 路由识别、全零 MAC / SSID 长度校验，以及桌面入口路径检查。测试 Wi-Fi 配置改为仅驻留内存，恢复动作可重复执行。
 
