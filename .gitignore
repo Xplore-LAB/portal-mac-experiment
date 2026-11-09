@@ -1,0 +1,19 @@
+# Local credentials, machine-specific presets, logs and temporary results.
+.env
+.env.*
+!.env.example
+*.log
+*.swp
+*.swo
+.DS_Store
+__pycache__/
+.pytest_cache/
+private/
+secrets/
+credentials/
+*.pem
+*.key
+experiments/private-*
+experiments/*-raw.*
+experiments/*-unredacted.*
+release/

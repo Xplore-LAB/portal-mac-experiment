@@ -1,0 +1,22 @@
+# null = 未测；false = 实测失败。仅填写脱敏数据。
+experiment_id: "portal-mac-001"
+date: "YYYY-MM-DD"
+project_version: "v0.3.1"
+permission_confirmed: false
+pi_model: ""
+os_version: ""
+wifi_interface: "wlan0"
+management_channel: "local-console | wired-ssh"
+target_mac_masked: "xx:xx:xx:xx:xx:xx"
+pi_original_mac_masked: ""
+route_via_test_wifi_confirmed: null
+mac_clone_effective: null
+pi_ipv4_masked: ""
+portal_login_success: null
+device_ipv4_masked: ""
+device_inherited_access: null
+device_still_online_after_restart: null
+pi_disconnected_before_handoff: null
+observation_duration_minutes: null
+failure_stage: ""
+notes: ""
